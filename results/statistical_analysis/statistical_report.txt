@@ -1,0 +1,159 @@
+================================================================================
+STATISTICAL ANALYSIS REPORT
+================================================================================
+
+1. PER-CONFIGURATION METRICS
+--------------------------------------------------------------------------------
+
+baseline:
+  BA_clip: 0.6404 [0.6268, 0.6537]
+  Recall_Speech: 0.3209 [0.3121, 0.3298] (n=10666)
+  Recall_NonSpeech: 0.9598 [0.9559, 0.9633] (n=10665)
+
+base_opro:
+  BA_clip: 0.8378 [0.8257, 0.8493]
+  Recall_Speech: 0.7680 [0.7598, 0.7761] (n=10372)
+  Recall_NonSpeech: 0.9076 [0.9019, 0.9129] (n=10648)
+
+lora:
+  BA_clip: 0.8643 [0.8519, 0.8757]
+  Recall_Speech: 0.8246 [0.8173, 0.8317] (n=10668)
+  Recall_NonSpeech: 0.9039 [0.8982, 0.9093] (n=10665)
+
+lora_opro_classic:
+  BA_clip: 0.9329 [0.9248, 0.9403]
+  Recall_Speech: 0.9282 [0.9232, 0.9330] (n=10670)
+  Recall_NonSpeech: 0.9377 [0.9329, 0.9421] (n=10669)
+
+lora_opro_open:
+  BA_clip: 0.8423 [0.8280, 0.8561]
+  Recall_Speech: 0.9500 [0.9457, 0.9540] (n=10668)
+  Recall_NonSpeech: 0.7346 [0.7262, 0.7430] (n=10616)
+
+qwen3_baseline:
+  BA_clip: 0.9108 [0.9036, 0.9178]
+  Recall_Speech: 0.8742 [0.8678, 0.8804] (n=10670)
+  Recall_NonSpeech: 0.9474 [0.9430, 0.9515] (n=10670)
+
+qwen3_opro:
+  BA_clip: 0.9137 [0.9060, 0.9212]
+  Recall_Speech: 0.8920 [0.8860, 0.8978] (n=10670)
+  Recall_NonSpeech: 0.9354 [0.9306, 0.9399] (n=10670)
+
+lora_opro:
+  BA_clip: 0.9329 [0.9248, 0.9403]
+  Recall_Speech: 0.9282 [0.9232, 0.9330] (n=10670)
+  Recall_NonSpeech: 0.9377 [0.9329, 0.9421] (n=10669)
+
+
+2. PRIMARY COMPARISONS (Holm-Bonferroni corrected)
+--------------------------------------------------------------------------------
+
+Baseline vs Base+OPRO:
+  ΔBA: -0.1975 [-0.2103, -0.1848]
+  p-value (raw): 0.000000
+  p-value (adjusted): 0.000000
+  Significant (α=0.05): True
+  Discordant rate: 0.2689
+  McNemar table: n_01=815, n_10=4836
+
+Baseline vs LoRA+BasePrompt:
+  ΔBA: -0.2239 [-0.2357, -0.2121]
+  p-value (raw): 0.000000
+  p-value (adjusted): 0.000000
+  Significant (α=0.05): True
+  Discordant rate: 0.2848
+  McNemar table: n_01=650, n_10=5424
+
+LoRA+BasePrompt vs LoRA+OPRO:
+  ΔBA: -0.0687 [-0.0783, -0.0590]
+  p-value (raw): 0.000000
+  p-value (adjusted): 0.000000
+  Significant (α=0.05): True
+  Discordant rate: 0.1044
+  McNemar table: n_01=379, n_10=1848
+
+LoRA+OPRO_Classic vs LoRA+OPRO_Open:
+  ΔBA: 0.0906 [0.0774, 0.1041]
+  p-value (raw): 0.000000
+  p-value (adjusted): 0.000000
+  Significant (α=0.05): True
+  Discordant rate: 0.1675
+  McNemar table: n_01=2752, n_10=813
+
+Qwen3 Baseline vs Qwen3+OPRO:
+  ΔBA: -0.0029 [-0.0061, 0.0004]
+  p-value (raw): 0.013606
+  p-value (adjusted): 0.013606
+  Significant (α=0.05): True
+  Discordant rate: 0.0287
+  McNemar table: n_01=275, n_10=337
+
+
+3. PSYCHOMETRIC THRESHOLDS
+--------------------------------------------------------------------------------
+
+baseline:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 1000.00 ms [1000.00, 1000.00] [above_range]
+    DT90: 1000.00 ms [1000.00, 1000.00] [above_range]
+  SNR thresholds:
+    SNR75: 20.00 dB [20.00, 20.00] [above_range]
+
+base_opro:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 33.80 ms [30.02, 37.83]
+    DT90: 435.40 ms [115.68, 1000.00]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+lora:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 20.00 ms [20.00, 20.00] [below_range]
+    DT90: 302.43 ms [86.67, 1000.00]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+lora_opro_classic:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 27.42 ms [21.76, 32.44]
+    DT90: 96.41 ms [87.62, 133.33]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+lora_opro_open:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 29.11 ms [20.00, 40.88]
+    DT90: 1000.00 ms [925.40, 1000.00] [above_range]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+qwen3_baseline:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 24.68]
+    DT75: 62.14 ms [56.80, 68.85]
+    DT90: 175.00 ms [146.27, 222.23]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+qwen3_opro:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 56.11 ms [47.10, 67.56]
+    DT90: 178.79 ms [154.76, 221.44]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
+lora_opro:
+  Duration thresholds:
+    DT50: 20.00 ms [20.00, 20.00] [below_range]
+    DT75: 27.42 ms [21.76, 32.44]
+    DT90: 96.41 ms [87.62, 133.33]
+  SNR thresholds:
+    SNR75: -10.00 dB [-10.00, -10.00] [below_range]
+
