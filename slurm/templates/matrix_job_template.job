@@ -1,0 +1,140 @@
+#!/bin/bash
+#SBATCH --job-name=opro3_matrix
+#SBATCH --partition=a100
+#SBATCH --gpus=1
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=64G
+#SBATCH --time=48:00:00
+#SBATCH --output=/mnt/fast/nobackup/users/gb0048/opro3_final/logs/matrix_%j.out
+#SBATCH --error=/mnt/fast/nobackup/users/gb0048/opro3_final/logs/matrix_%j.err
+
+# =============================================================================
+# OPRO3 Matrix Experiment - Master Job
+# =============================================================================
+# Runs the 3x3 comparative experiment matrix
+#
+# Usage:
+#   ./slurm/tools/on_submit.sh sbatch slurm/templates/matrix_job_template.job [SEED] [CELLS] [RESUME_DIR]
+#
+# Examples:
+#   ./slurm/tools/on_submit.sh sbatch slurm/templates/matrix_job_template.job 42 all
+#   ./slurm/tools/on_submit.sh sbatch slurm/templates/matrix_job_template.job 42 "1A,2A,3A"
+#   # Resume into existing directory:
+#   ./slurm/tools/on_submit.sh sbatch slurm/templates/matrix_job_template.job 42 "1A,1B" "results/20260130_185046_COMPARATIVE_RUN"
+# =============================================================================
+
+set -euo pipefail
+set -x
+
+REPO="/mnt/fast/nobackup/users/gb0048/opro3_final"
+REPO_PARENT="/mnt/fast/nobackup/users/gb0048"
+
+# Container (pytorch_2.1_cuda12.sif works for both Qwen2 and Qwen3)
+CONTAINER="$REPO_PARENT/opro2/pytorch_2.1_cuda12.sif"
+
+# Parameters (can be overridden via CLI)
+SEED="${1:-42}"
+CELLS="${2:-all}"
+RESUME_DIR="${3:-}"  # Optional: path to existing output directory to resume
+
+echo "[INFO] ========================================================================"
+echo "[INFO] OPRO3 MATRIX EXPERIMENT - START: $(date)"
+echo "[INFO] ========================================================================"
+echo "[INFO] Seed: $SEED"
+echo "[INFO] Cells: $CELLS"
+echo "[INFO] Resume dir: ${RESUME_DIR:-<none>}"
+echo "[INFO] Repo: $REPO"
+echo "[INFO] GPU Info:"
+nvidia-smi --query-gpu=name,memory.total --format=csv
+
+cd "$REPO"
+
+# Environment setup
+export HF_HOME="$REPO_PARENT/.cache/huggingface"
+export TRANSFORMERS_CACHE="$HF_HOME/transformers"
+export HF_HUB_CACHE="$HF_HOME/hub"
+export PIP_CACHE_DIR="$REPO_PARENT/.cache/pip"
+export TMPDIR="$REPO_PARENT/tmp"
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
+# User site-packages for torchaudio installation
+export PYTHONUSERBASE="$REPO_PARENT/.local"
+export USER_SITE="$PYTHONUSERBASE/lib/python3.10/site-packages"
+
+mkdir -p "$HF_HOME" "$TRANSFORMERS_CACHE" "$HF_HUB_CACHE" "$PIP_CACHE_DIR" "$TMPDIR" "$PYTHONUSERBASE"
+mkdir -p logs results checkpoints
+
+# Verify data symlink
+if [ ! -L "$REPO/data" ] && [ ! -d "$REPO/data" ]; then
+    echo "[SETUP] Creating data symlink..."
+    ln -s ../opro2_clean/data "$REPO/data"
+fi
+
+echo "[INFO] Data symlink:"
+ls -la "$REPO/data" | head -5
+
+# Verify container exists
+if [ ! -f "$CONTAINER" ]; then
+    echo "[ERROR] Container not found: $CONTAINER"
+    exit 1
+fi
+echo "[INFO] Container: $CONTAINER"
+
+# Install dependencies if needed
+echo "[SETUP] Checking Python environment..."
+apptainer exec --nv \
+    --env PIP_CACHE_DIR="$PIP_CACHE_DIR" \
+    --env TMPDIR="$TMPDIR" \
+    "$CONTAINER" python3 -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.cuda.is_available()}')"
+
+# Install torchaudio for Silero VAD (required for training data filtering per methodology)
+# torchaudio >= 2.9 requires torchcodec for audio I/O, so we pin to 2.5.1
+# (last version with native audio backend, compatible with cu121)
+echo "[SETUP] Installing torchaudio 2.5.1 for Silero VAD..."
+apptainer exec --nv \
+    --env PIP_CACHE_DIR="$PIP_CACHE_DIR" \
+    --env TMPDIR="$TMPDIR" \
+    --env PYTHONUSERBASE="$PYTHONUSERBASE" \
+    "$CONTAINER" pip install --user --no-cache-dir \
+    torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+
+# Verify torchaudio installation
+echo "[SETUP] Verifying torchaudio installation..."
+apptainer exec --nv \
+    --env PYTHONUSERBASE="$PYTHONUSERBASE" \
+    --env PYTHONPATH="$USER_SITE:${PYTHONPATH:-}" \
+    "$CONTAINER" python3 -c "import torchaudio; print(f'torchaudio: {torchaudio.__version__}')"
+
+# Run the matrix orchestrator
+echo "[RUN] Starting Matrix Orchestrator..."
+echo "[RUN] Cells: $CELLS"
+
+# Build orchestrator command
+ORCHESTRATOR_CMD="python3 scripts/run_matrix.py --cells $CELLS --seed $SEED --output_dir results"
+if [ -n "$RESUME_DIR" ]; then
+    ORCHESTRATOR_CMD="$ORCHESTRATOR_CMD --resume_dir $RESUME_DIR"
+fi
+
+apptainer exec --nv \
+    --pwd "$REPO" \
+    --env HF_HOME="$HF_HOME" \
+    --env TRANSFORMERS_CACHE="$TRANSFORMERS_CACHE" \
+    --env HF_HUB_CACHE="$HF_HUB_CACHE" \
+    --env PYTORCH_CUDA_ALLOC_CONF="$PYTORCH_CUDA_ALLOC_CONF" \
+    --env PYTHONUSERBASE="$PYTHONUSERBASE" \
+    --env PYTHONPATH="$USER_SITE:$REPO${PYTHONPATH:+:$PYTHONPATH}" \
+    "$CONTAINER" $ORCHESTRATOR_CMD
+
+EXIT_CODE=$?
+
+echo "[INFO] ========================================================================"
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "[INFO] MATRIX EXPERIMENT COMPLETE - SUCCESS"
+    echo "[INFO] Results saved to: $REPO/results/"
+else
+    echo "[ERROR] MATRIX EXPERIMENT FAILED (Exit code: $EXIT_CODE)"
+fi
+echo "[INFO] END: $(date)"
+echo "[INFO] ========================================================================"
+
+exit $EXIT_CODE

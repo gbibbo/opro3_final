@@ -1,0 +1,121 @@
+#!/bin/bash
+#SBATCH --job-name=opro3_qwen3_3B
+#SBATCH --partition=a100
+#SBATCH --gpus=1
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=64G
+#SBATCH --time=72:00:00
+#SBATCH --output=/mnt/fast/nobackup/users/gb0048/opro3_final/logs/qwen3_3B_%j.out
+#SBATCH --error=/mnt/fast/nobackup/users/gb0048/opro3_final/logs/qwen3_3B_%j.err
+
+# =============================================================================
+# OPRO3 - Qwen3-Omni Cell 3B (OPRO LLM Optimization)
+# =============================================================================
+# Extended time limit (7 days) for Qwen3-Omni which is ~4x slower than Qwen2
+# Maintains 30 iterations for methodological consistency
+#
+# Usage:
+#   ./slurm/tools/on_submit.sh sbatch slurm/jobs/qwen3_3B.job [SEED] [RESUME_DIR]
+#
+# Examples:
+#   ./slurm/tools/on_submit.sh sbatch slurm/jobs/qwen3_3B.job 42
+#   ./slurm/tools/on_submit.sh sbatch slurm/jobs/qwen3_3B.job 42 "results/20260130_185046_COMPARATIVE_RUN"
+# =============================================================================
+
+set -euo pipefail
+set -x
+
+REPO="/mnt/fast/nobackup/users/gb0048/opro3_final"
+REPO_PARENT="/mnt/fast/nobackup/users/gb0048"
+
+# Container (pytorch_2.1_cuda12.sif works for both Qwen2 and Qwen3)
+CONTAINER="$REPO_PARENT/opro2/pytorch_2.1_cuda12.sif"
+
+# Parameters
+SEED="${1:-42}"
+RESUME_DIR="${2:-}"
+
+echo "[INFO] ========================================================================"
+echo "[INFO] OPRO3 QWEN3-OMNI CELL 3B - START: $(date)"
+echo "[INFO] ========================================================================"
+echo "[INFO] Cell: 3B (Qwen3-Omni OPRO LLM)"
+echo "[INFO] Seed: $SEED"
+echo "[INFO] Resume dir: ${RESUME_DIR:-<none>}"
+echo "[INFO] Time limit: 72 hours (3 days - partition max)"
+echo "[INFO] GPU Info:"
+nvidia-smi --query-gpu=name,memory.total --format=csv
+
+cd "$REPO"
+
+# Environment setup
+export HF_HOME="$REPO_PARENT/.cache/huggingface"
+export TRANSFORMERS_CACHE="$HF_HOME/transformers"
+export HF_HUB_CACHE="$HF_HOME/hub"
+export PIP_CACHE_DIR="$REPO_PARENT/.cache/pip"
+export TMPDIR="$REPO_PARENT/tmp"
+export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+
+# User site-packages for torchaudio installation
+export PYTHONUSERBASE="$REPO_PARENT/.local"
+export USER_SITE="$PYTHONUSERBASE/lib/python3.10/site-packages"
+
+mkdir -p "$HF_HOME" "$TRANSFORMERS_CACHE" "$HF_HUB_CACHE" "$PIP_CACHE_DIR" "$TMPDIR" "$PYTHONUSERBASE"
+mkdir -p logs results checkpoints
+
+# Verify data symlink
+if [ ! -L "$REPO/data" ] && [ ! -d "$REPO/data" ]; then
+    echo "[SETUP] Creating data symlink..."
+    ln -s ../opro2_clean/data "$REPO/data"
+fi
+
+echo "[INFO] Data symlink:"
+ls -la "$REPO/data" | head -5
+
+# Verify container exists
+if [ ! -f "$CONTAINER" ]; then
+    echo "[ERROR] Container not found: $CONTAINER"
+    exit 1
+fi
+echo "[INFO] Container: $CONTAINER"
+
+# Install torchaudio for Silero VAD
+echo "[SETUP] Installing torchaudio 2.5.1 for Silero VAD..."
+apptainer exec --nv \
+    --env PIP_CACHE_DIR="$PIP_CACHE_DIR" \
+    --env TMPDIR="$TMPDIR" \
+    --env PYTHONUSERBASE="$PYTHONUSERBASE" \
+    "$CONTAINER" pip install --user --no-cache-dir \
+    torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+
+# Run only cell 3B
+echo "[RUN] Starting Cell 3B: Qwen3-Omni OPRO LLM..."
+
+# Build orchestrator command
+ORCHESTRATOR_CMD="python3 scripts/run_matrix.py --cells 3B --seed $SEED --output_dir results"
+if [ -n "$RESUME_DIR" ]; then
+    ORCHESTRATOR_CMD="$ORCHESTRATOR_CMD --resume_dir $RESUME_DIR"
+fi
+
+apptainer exec --nv \
+    --pwd "$REPO" \
+    --env HF_HOME="$HF_HOME" \
+    --env TRANSFORMERS_CACHE="$TRANSFORMERS_CACHE" \
+    --env HF_HUB_CACHE="$HF_HUB_CACHE" \
+    --env PYTORCH_CUDA_ALLOC_CONF="$PYTORCH_CUDA_ALLOC_CONF" \
+    --env PYTHONUSERBASE="$PYTHONUSERBASE" \
+    --env PYTHONPATH="$USER_SITE:$REPO${PYTHONPATH:+:$PYTHONPATH}" \
+    "$CONTAINER" $ORCHESTRATOR_CMD
+
+EXIT_CODE=$?
+
+echo "[INFO] ========================================================================"
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "[INFO] CELL 3B COMPLETE - SUCCESS"
+    echo "[INFO] Results saved to: $REPO/results/"
+else
+    echo "[ERROR] CELL 3B FAILED (Exit code: $EXIT_CODE)"
+fi
+echo "[INFO] END: $(date)"
+echo "[INFO] ========================================================================"
+
+exit $EXIT_CODE

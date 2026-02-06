@@ -1,0 +1,135 @@
+# Global Configuration for Qwen Speech Minimum Project
+# =======================================================
+# Control dataset size for prototyping vs full experiments
+
+# PROTOTYPE_MODE: Set to true for development with 5 examples per dataset
+# Set to false for full dataset downloads and processing
+PROTOTYPE_MODE: true
+
+# Number of examples to use when in prototype mode
+PROTOTYPE_SAMPLES: 5
+
+# Data paths (apuntan al dataset original en opro2)
+data:
+  root: "c:/VS projects/opro2/data"
+  raw: "c:/VS projects/opro2/data/raw"
+  processed: "c:/VS projects/opro2/data/processed"
+  segments: "c:/VS projects/opro2/data/segments"
+  cache: "c:/VS projects/opro2/data/cache"
+
+# Model configurations
+models:
+  qwen2_audio:
+    name: "Qwen/Qwen2-Audio-7B-Instruct"
+    max_audio_duration: 30  # seconds (recommended limit)
+    sample_rate: 16000
+    mel_window_ms: 25
+    mel_hop_ms: 10
+    effective_frame_ms: 40  # ~40ms per output frame after pooling
+
+  qwen3_omni:
+    name: "Qwen/Qwen3-Omni"
+    sample_rate: 16000
+
+# VAD baselines
+vad:
+  webrtc:
+    frame_sizes_ms: [10, 20, 30]
+    aggressiveness_levels: [0, 1, 2, 3]
+
+  silero:
+    repo: "snakers4/silero-vad"
+    frame_size_ms: 32  # 512 samples @ 16kHz
+    threshold: 0.5
+
+# Target segment durations (in milliseconds)
+# Based on Qwen2-Audio's ~40ms frame resolution
+durations_ms: [20, 40, 60, 80, 100, 150, 200, 300, 500, 1000]
+
+# Audio processing
+audio:
+  sample_rate: 16000
+  channels: 1  # mono
+  bit_depth: 16
+
+# Datasets configuration
+datasets:
+  ava_speech:
+    enabled: true
+    url: "https://research.google.com/ava/download.html"
+    ground_truth_precision: "frame"  # frame-level labels
+    frame_rate: 25  # fps
+    conditions: ["clean", "music", "noise"]
+
+  dihard:
+    enabled: true
+    version: "III"
+    url: "https://dihardchallenge.github.io/dihard3/"
+    ground_truth_precision: "rttm"  # onset/offset timestamps
+
+  voxconverse:
+    enabled: true
+    version: "0.3"
+    url: "https://github.com/joonson/voxconverse"
+    ground_truth_precision: "rttm"
+
+  ami:
+    enabled: true
+    url: "https://groups.inf.ed.ac.uk/ami/corpus/"
+    ground_truth_precision: "word"  # word-level forced alignment
+    alignment_step_ms: 10
+
+  ava_activespeaker:
+    enabled: true
+    url: "https://github.com/cvdfoundation/ava-dataset"
+    ground_truth_precision: "frame"
+    frame_rate: 25
+
+# Evaluation
+evaluation:
+  metrics: ["f1", "auroc", "auprc", "precision", "recall"]
+  psychometric:
+    confidence_levels: [0.5, 0.75]  # DT50, DT75
+    bootstrap_iterations: 1000
+    ci_level: 0.95
+
+# Prompt optimization
+prompt_optimization:
+  opro:
+    enabled: true
+    num_iterations: 10
+    candidates_per_iteration: 5
+    top_k: 3
+
+  dspy:
+    enabled: true
+    optimizer: "BootstrapFewShot"
+
+# Fine-tuning
+fine_tuning:
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+    bias: "none"
+
+  training:
+    batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 2e-4
+    num_epochs: 3
+    warmup_ratio: 0.1
+    curriculum: [500, 200, 100, 40]  # ms, decreasing
+
+# Reproducibility
+seed: 42
+deterministic: true
+
+# Logging
+logging:
+  level: "INFO"
+  log_dir: "c:/VS projects/opro2_clean/logs"
+  wandb:
+    enabled: false
+    project: "qwen-speech-min"
