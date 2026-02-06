@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "experiment": "OPRO3 Comparative Matrix (3x3)",
+    "generated": "2026-02-05",
+    "test_samples": 21340,
+    "seed": 42,
+    "description": "Comparison of Baseline vs OPRO LLM vs OPRO Template across Qwen2-Base, Qwen2-LoRA, and Qwen3-Omni"
+  },
+  "matrix": {
+    "1A": {
+      "cell": "1A",
+      "model": "Qwen2-Audio (Base)",
+      "method": "Baseline",
+      "ba_clip": 0.6401,
+      "ba_conditions": 0.6370,
+      "speech_acc": 0.3208,
+      "nonspeech_acc": 0.9593,
+      "prompt": "Does this audio contain human speech? Answer SPEECH or NONSPEECH.",
+      "source_run": "20260130_185046_COMPARATIVE_RUN",
+      "source_dir": "01_qwen2_base_baseline"
+    },
+    "1B": {
+      "cell": "1B",
+      "model": "Qwen2-Audio (Base)",
+      "method": "OPRO LLM",
+      "ba_clip": 0.8261,
+      "ba_conditions": 0.8223,
+      "speech_acc": 0.7466,
+      "nonspeech_acc": 0.9057,
+      "prompt": "Is this audio human speech? Answer: SPEECH or NON-SPEECH.",
+      "source_run": "20260130_185046_COMPARATIVE_RUN",
+      "source_dir": "02_qwen2_base_opro_llm"
+    },
+    "1C": {
+      "cell": "1C",
+      "model": "Qwen2-Audio (Base)",
+      "method": "OPRO Template",
+      "ba_clip": 0.7508,
+      "ba_conditions": 0.7513,
+      "speech_acc": 0.7174,
+      "nonspeech_acc": 0.7843,
+      "prompt": "Make a definite decision for the clip.\nOutput exactly one token: SPEECH or NONSPEECH.",
+      "source_run": "20260130_185046_COMPARATIVE_RUN",
+      "source_dir": "03_qwen2_base_opro_template"
+    },
+    "2A": {
+      "cell": "2A",
+      "model": "Qwen2-Audio (LoRA)",
+      "method": "Baseline",
+      "ba_clip": 0.8640,
+      "ba_conditions": 0.8592,
+      "speech_acc": 0.8245,
+      "nonspeech_acc": 0.9035,
+      "prompt": "Does this audio contain human speech? Answer SPEECH or NONSPEECH.",
+      "source_run": "20260204_201138_COMPARATIVE_RUN",
+      "source_dir": "04_qwen2_lora_baseline",
+      "checkpoint": "00_lora_training/checkpoints/final",
+      "training_samples": 3072
+    },
+    "2B": {
+      "cell": "2B",
+      "model": "Qwen2-Audio (LoRA)",
+      "method": "OPRO LLM",
+      "ba_clip": 0.8404,
+      "ba_conditions": 0.8490,
+      "speech_acc": 0.8000,
+      "nonspeech_acc": 0.8808,
+      "prompt": "Classify this audio as SPEECH or NON-SPEECH, focusing on short and noisy clips.",
+      "source_run": "20260204_201138_COMPARATIVE_RUN",
+      "source_dir": "05_qwen2_lora_opro_llm",
+      "checkpoint": "00_lora_training/checkpoints/final"
+    },
+    "2C": {
+      "cell": "2C",
+      "model": "Qwen2-Audio (LoRA)",
+      "method": "OPRO Template",
+      "ba_clip": 0.9329,
+      "ba_conditions": 0.9426,
+      "speech_acc": 0.9295,
+      "nonspeech_acc": 0.9363,
+      "prompt": "Detect human speech. Treat the following as NONSPEECH: pure tones/beeps, clicks, clock ticks, music, environmental noise, silence.\nAnswer: SPEECH or NONSPEECH.",
+      "source_run": "20260204_201138_COMPARATIVE_RUN",
+      "source_dir": "06_qwen2_lora_opro_template",
+      "checkpoint": "00_lora_training/checkpoints/final"
+    },
+    "3A": {
+      "cell": "3A",
+      "model": "Qwen3-Omni",
+      "method": "Baseline",
+      "ba_clip": 0.9108,
+      "ba_conditions": 0.9298,
+      "speech_acc": 0.8742,
+      "nonspeech_acc": 0.9474,
+      "prompt": "Does this audio contain human speech? Answer SPEECH or NONSPEECH.",
+      "source_run": "20260130_185046_COMPARATIVE_RUN",
+      "source_dir": "07_qwen3_omni_baseline"
+    },
+    "3B": {
+      "cell": "3B",
+      "model": "Qwen3-Omni",
+      "method": "OPRO LLM",
+      "ba_clip": 0.9137,
+      "ba_conditions": 0.9315,
+      "speech_acc": 0.8920,
+      "nonspeech_acc": 0.9354,
+      "prompt": "What type of sound is this? Respond: SPEECH or NON-SPEECH.",
+      "source_run": "20260204_201131_COMPARATIVE_RUN",
+      "source_dir": "08_qwen3_omni_opro_llm"
+    },
+    "3C": {
+      "cell": "3C",
+      "model": "Qwen3-Omni",
+      "method": "OPRO Template",
+      "ba_clip": 0.8780,
+      "ba_conditions": 0.8939,
+      "speech_acc": 0.9022,
+      "nonspeech_acc": 0.8539,
+      "prompt": "Decide the dominant content.\nDefinitions:\n- SPEECH = human voice, spoken words, syllables, conversational cues.\n- NONSPEECH = music, tones/beeps, environmental noise, silence.\nOutput exactly: SPEECH or NONSPEECH.",
+      "source_run": "20260204_201131_COMPARATIVE_RUN",
+      "source_dir": "09_qwen3_omni_opro_template"
+    }
+  },
+  "summary_table": {
+    "headers": ["Model", "Baseline (A)", "OPRO LLM (B)", "OPRO Template (C)", "Best Method", "Gain vs Baseline"],
+    "rows": [
+      ["Qwen2-Base", "64.01%", "82.61%", "75.08%", "OPRO LLM", "+18.60 pp"],
+      ["Qwen2-LoRA", "86.40%", "84.04%", "93.29%", "OPRO Template", "+6.89 pp"],
+      ["Qwen3-Omni", "91.08%", "91.37%", "87.80%", "OPRO LLM", "+0.29 pp"]
+    ]
+  },
+  "key_findings": [
+    "Base models (Qwen2-Base, Qwen3-Omni) prefer OPRO LLM: natural, concise prompts work better",
+    "Fine-tuned model (Qwen2-LoRA) prefers OPRO Template: structured prompts with explicit definitions",
+    "OPRO LLM actually hurts LoRA performance (-2.36 pp vs baseline)",
+    "Best absolute result: Qwen2-LoRA + OPRO Template = 93.29%",
+    "Qwen3-Omni achieves 91%+ with minimal optimization (only +0.29 pp gain)"
+  ],
+  "methodology_notes": {
+    "opro_llm": {
+      "samples_per_eval": 660,
+      "iterations": "up to 30 (early stopping at 5)",
+      "candidates_per_iter": 3,
+      "prompt_generation": "Meta-LLM (Qwen2.5-7B-Instruct)"
+    },
+    "opro_template": {
+      "samples_per_eval": 20,
+      "iterations": 15,
+      "candidates_per_iter": 8,
+      "prompt_generation": "Fixed library with shuffling"
+    }
+  }
+}
