@@ -6,6 +6,8 @@ This repository contains an applied audio ML experiment testing whether a smalle
 
 **Main result:** Qwen2-Audio-7B adapted with LoRA and OPRO-Template reached **93.3% balanced accuracy** on **21,340 degraded test clips**, outperforming a frozen Qwen3-Omni-30B baseline at **91.1% balanced accuracy**.
 
+**Project case study:** https://gbibbo.github.io/work/audio-language-vad/
+
 ---
 
 ## Problem
